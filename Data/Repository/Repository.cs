@@ -262,11 +262,17 @@ public class Repository<T> : IRepository<T>
     /// <inheritdoc />
     public async Task<int> ExecuteSqlAsync(string sql, params object[] parameters)
     {
+        return await ExecuteSqlAsync(sql, CancellationToken.None, parameters).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async Task<int> ExecuteSqlAsync(string sql, CancellationToken cancellationToken, params object[] parameters)
+    {
         ArgumentException.ThrowIfNullOrWhiteSpace(sql);
 
         try
         {
-            return await _context.Database.ExecuteSqlRawAsync(sql, parameters ?? Array.Empty<object>())
+            return await _context.Database.ExecuteSqlRawAsync(sql, parameters ?? Array.Empty<object>(), cancellationToken)
                 .ConfigureAwait(false);
         }
         catch (Exception exception)

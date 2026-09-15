@@ -122,6 +122,15 @@ public interface IRepository<T>
     Task<int> ExecuteSqlAsync(string sql, params object[] parameters);
 
     /// <summary>
+    /// Executes a raw SQL command.
+    /// </summary>
+    /// <param name="sql">The SQL command text.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <param name="parameters">The SQL parameters.</param>
+    /// <returns>The number of rows affected.</returns>
+    Task<int> ExecuteSqlAsync(string sql, CancellationToken cancellationToken, params object[] parameters);
+
+    /// <summary>
     /// Persists changes to the database.
     /// </summary>
     /// <param name="cancellationToken">The cancellation token.</param>

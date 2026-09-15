@@ -103,7 +103,7 @@ public sealed class CustomerService
                            WHERE CreatedUtc < {0} AND IsActive = 1
                            """;
 
-        return _unitOfWork.Repository<Customer>().ExecuteSqlAsync(sql, cutoffDate);
+        return _unitOfWork.Repository<Customer>().ExecuteSqlAsync(sql, cancellationToken, cutoffDate);
     }
 }
 ```
