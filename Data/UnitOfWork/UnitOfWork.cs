@@ -1,4 +1,5 @@
 using EfCoreWrapper.Data.Exceptions;
+using EfCoreWrapper.Data.Internal;
 using EfCoreWrapper.Data.Repository;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
@@ -58,78 +59,32 @@ public class UnitOfWork : IUnitOfWork
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         ThrowIfDisposed();
-
-        try
-        {
-            return await _context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception exception)
-        {
-            _logger.LogError(exception, "Failed to save changes in the unit of work.");
-            throw new RepositoryException("Failed to save changes in the unit of work.", exception);
-        }
+        return await DbContextOperations.SaveChangesAsync(_context, _logger, "unit of work", cancellationToken)
+            .ConfigureAwait(false);
     }
 
     /// <inheritdoc />
     public async Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
         ThrowIfDisposed();
-
-        try
-        {
-            return await _context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception exception)
-        {
-            _logger.LogError(exception, "Failed to begin a transaction.");
-            throw new RepositoryException("Failed to begin a transaction.", exception);
-        }
+        return await DbContextOperations.BeginTransactionAsync(_context, _logger, "unit of work", cancellationToken)
+            .ConfigureAwait(false);
     }
 
     /// <inheritdoc />
     public async Task CommitTransactionAsync(CancellationToken cancellationToken = default)
     {
         ThrowIfDisposed();
-
-        try
-        {
-            var transaction = _context.Database.CurrentTransaction
-                ?? throw new RepositoryException("There is no active transaction to commit.");
-            await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
-            await transaction.DisposeAsync().ConfigureAwait(false);
-        }
-        catch (RepositoryException)
-        {
-            throw;
-        }
-        catch (Exception exception)
-        {
-            _logger.LogError(exception, "Failed to commit the current transaction.");
-            throw new RepositoryException("Failed to commit the current transaction.", exception);
-        }
+        await DbContextOperations.CommitTransactionAsync(_context, _logger, "unit of work", cancellationToken)
+            .ConfigureAwait(false);
     }
 
     /// <inheritdoc />
     public async Task RollbackTransactionAsync(CancellationToken cancellationToken = default)
     {
         ThrowIfDisposed();
-
-        try
-        {
-            var transaction = _context.Database.CurrentTransaction
-                ?? throw new RepositoryException("There is no active transaction to roll back.");
-            await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
-            await transaction.DisposeAsync().ConfigureAwait(false);
-        }
-        catch (RepositoryException)
-        {
-            throw;
-        }
-        catch (Exception exception)
-        {
-            _logger.LogError(exception, "Failed to roll back the current transaction.");
-            throw new RepositoryException("Failed to roll back the current transaction.", exception);
-        }
+        await DbContextOperations.RollbackTransactionAsync(_context, _logger, "unit of work", cancellationToken)
+            .ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -141,8 +96,8 @@ public class UnitOfWork : IUnitOfWork
         }
 
         _repositories.Clear();
-        await _context.DisposeAsync().ConfigureAwait(false);
         _disposed = true;
+        await ValueTask.CompletedTask.ConfigureAwait(false);
     }
 
     private void ThrowIfDisposed()

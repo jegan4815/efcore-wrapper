@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using EfCoreWrapper.Data.Exceptions;
+using EfCoreWrapper.Data.Internal;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
@@ -285,71 +286,29 @@ public class Repository<T> : IRepository<T>
     /// <inheritdoc />
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        try
-        {
-            return await _context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception exception)
-        {
-            _logger.LogError(exception, "Failed to save changes for entity type {EntityType}.", typeof(T).Name);
-            throw new RepositoryException($"Failed to save changes for entity type {typeof(T).Name}.", exception);
-        }
+        return await DbContextOperations.SaveChangesAsync(_context, _logger, $"repository {typeof(T).Name}", cancellationToken)
+            .ConfigureAwait(false);
     }
 
     /// <inheritdoc />
     public async Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
-        try
-        {
-            return await _context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception exception)
-        {
-            _logger.LogError(exception, "Failed to begin transaction for entity type {EntityType}.", typeof(T).Name);
-            throw new RepositoryException($"Failed to begin transaction for entity type {typeof(T).Name}.", exception);
-        }
+        return await DbContextOperations.BeginTransactionAsync(_context, _logger, $"repository {typeof(T).Name}", cancellationToken)
+            .ConfigureAwait(false);
     }
 
     /// <inheritdoc />
     public async Task CommitTransactionAsync(CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var transaction = _context.Database.CurrentTransaction
-                ?? throw new RepositoryException("There is no active transaction to commit.");
-            await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
-            await transaction.DisposeAsync().ConfigureAwait(false);
-        }
-        catch (RepositoryException)
-        {
-            throw;
-        }
-        catch (Exception exception)
-        {
-            _logger.LogError(exception, "Failed to commit transaction for entity type {EntityType}.", typeof(T).Name);
-            throw new RepositoryException($"Failed to commit transaction for entity type {typeof(T).Name}.", exception);
-        }
+        await DbContextOperations.CommitTransactionAsync(_context, _logger, $"repository {typeof(T).Name}", cancellationToken)
+            .ConfigureAwait(false);
     }
 
     /// <inheritdoc />
     public async Task RollbackTransactionAsync(CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var transaction = _context.Database.CurrentTransaction
-                ?? throw new RepositoryException("There is no active transaction to roll back.");
-            await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
-            await transaction.DisposeAsync().ConfigureAwait(false);
-        }
-        catch (RepositoryException)
-        {
-            throw;
-        }
-        catch (Exception exception)
-        {
-            _logger.LogError(exception, "Failed to roll back transaction for entity type {EntityType}.", typeof(T).Name);
-            throw new RepositoryException($"Failed to roll back transaction for entity type {typeof(T).Name}.", exception);
-        }
+        await DbContextOperations.RollbackTransactionAsync(_context, _logger, $"repository {typeof(T).Name}", cancellationToken)
+            .ConfigureAwait(false);
     }
 
     private IQueryable<T> BuildQuery(
