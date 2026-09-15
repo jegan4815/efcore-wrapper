@@ -96,8 +96,13 @@ public class UnitOfWork : IUnitOfWork
         }
 
         _repositories.Clear();
+        if (_context.Database.CurrentTransaction is not null)
+        {
+            await _context.Database.CurrentTransaction.DisposeAsync().ConfigureAwait(false);
+        }
+
+        await _context.DisposeAsync().ConfigureAwait(false);
         _disposed = true;
-        await ValueTask.CompletedTask.ConfigureAwait(false);
     }
 
     private void ThrowIfDisposed()
